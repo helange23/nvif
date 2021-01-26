@@ -20,3 +20,13 @@ z_hat = N.inference(x[5000:])
 ```
 
 See `nilm_example.ipynb` for an example of how to use the algorithm in the context of a synthetic problem inspired by Non-Intrusive Load Monitoring. This readme file will be expanded upon soon.
+
+## Frequently Asked Questions
+* Why does the time required per epoch vary over time?
+  * Most of the time is spent sampling _without replacement_ from the auxiliary distribution $Q$. Sampling without replacement according to pre-defined inclusion probabilities is difficult and in some cases even impossible. The difficulty of sampling without replacement increases when the distribution to sample from has lower entropy. During training, the entropy of $Q$ decreases (in the beginning most states have the same probability) making the sampling step more time consuming.
+* Is the model that is being performed learning and inference on a Factorial Hidden Markov Model (FMM)?
+  * __No!__ FMMs make the assumption that the individual latent chains are marginally indepedent. NVIF does not require this assumption making the class of models that NVIF can perform inference and learning on a lot richer. Speficially for NILM, the 'independence between chains'-assumption is oftentimes not great because, from experience, you want to constrain the number of latent states that switch states.
+* What are potential avenues for future work?
+  * The underlying sampler (Yves Tilles elimination sampler) is slow but accurate. There are faster but less accurate alternatives such as, e.g. the Pareto sampler. Studying the effects of swapping out the sampler might considerably speed up inference.
+  * The main contribution of NVIF is an approximate algorithm for inference and learning in temporal models with binary latent states. However, little research has gone into the best instantiations (`p_zz` and `p_xz`) to solve e.g. Non-Intrusive Load Monitoring or Energy Disaggregation. The performance of NVIF can most likely improved substantially by finding better choices for `p_zz` and `p_xz`.
+  * So far, NVIF has only been evaluated in the context of NILM, applying the algorithm to other problems that require inference of binary latent states might be interesting.
