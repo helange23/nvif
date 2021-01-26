@@ -276,6 +276,8 @@ class nvif(nn.Module):
     sampler: nn.Module = fnet_sampler
     num_samples: int = 512
     sampler_cfg: dict = field(default_factory=dict)
+    pzz_cfg: dict = field(default_factory=dict)
+    pxz_cfg: dict = field(default_factory=dict)
     
     def setup(self):
         self.sampler_cfg.update({'num_samples': self.num_samples,
@@ -283,8 +285,8 @@ class nvif(nn.Module):
         
         self.sample_fun = self.sampler(**self.sampler_cfg)
         
-        self.pxz_fun = self.p_xz(x_dim=self.x_dim)
-        self.pzz_fun = self.p_zz()
+        self.pxz_fun = self.p_xz(**self.pxz_cfg)
+        self.pzz_fun = self.p_zz(**self.pzz_cfg)
         self.scan_ = scan_wrapper(self.pzz_fun)
  
     
@@ -360,7 +362,6 @@ class NVIF:
             
             return optimizer, s_state, ztm1, wtm1, loss
         
-        print('Done jitting')
         
         def train_epoch(optimizer, x, z0, w0, s0):
             """ Train one epoch."""
@@ -368,13 +369,14 @@ class NVIF:
             ztm1, wtm1, s_state = z0, w0, s0
             losses = []
             
-            s = time.time()
-            for t in range(int(np.ceil(x.shape[0]//num_steps))):
+            #s = time.time()
+            for t in range(int(np.ceil(x.shape[0]/num_steps))):
                 x_slice = x[t*num_steps:(t+1)*num_steps]
                 opt, s_state, ztm1, wtm1, loss = train_step(opt, sg(s_state), sg(ztm1), sg(wtm1), x_slice)
                 losses.append(loss)
-                print(t, loss, time.time()-s)
+                #print(t, loss, time.time()-s)
                 
+            self.zT, self.wT, self.sT = ztm1, wtm1, s_state
             return opt, np.mean(losses)
                 
         if not hasattr(self, 'optimizer'):
@@ -398,10 +400,13 @@ class NVIF:
         return optimizer.target, params, self.losses
     
     
-    def inference(self, x):
+    def inference(self, x, from_0 = False):
         
-        s0, z0, w0 = self.s0, self.z0, self.w0
-        (z, q, r, w, p_joint, vit_prev) = self.nvif.apply(self.optimizer.target, s0, z0, w0, x)[-1]
+        if from_0:
+            s, z, w = self.s0, self.z0, self.w0
+        else:
+            s, z, w = self.sT, self.zT, self.wT
+        (z, q, r, w, p_joint, vit_prev) = self.nvif.apply(self.optimizer.target, s, z, w, x)[-1]
         
         prev = vit_prev[-1][jnp.argmax(p_joint[-1])]
         states = [z[-1][jnp.argmax(p_joint[-1])]]
