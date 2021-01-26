@@ -3,9 +3,9 @@ This repository contains an efficient approximate algorithm for inference and le
 This code is accompanied by the following [paper](https://ieeexplore.ieee.org/abstract/document/8683552). A video explaining the algorithm and code will follow soon.
 
 # Usage
-In order to use the algorithm, probability densities for p(zt|ztm1) and p(xt|zt) need to be defined. The algorithm has two control knobs that can trade off computational burden and accurary. The first control know is the number of samples used to approximate the data likelihood (num_samples) whereas the second control knob controls the accuracy of the underlying sampler (EPS).
+In order to use the algorithm, probability densities for _p(zt|ztm1)_ and _p(xt|zt)_ need to be defined. The algorithm has two control knobs that can trade off computational burden and accurary. The first control know is the number of samples used to approximate the data likelihood (num_samples) whereas the second control knob controls the accuracy of the underlying sampler (EPS).
 
-The input to p(xt|zt) is `x_t: (num_steps, x_dim)` and `z_t: (num_steps, num_samples, z_dim)` and the output is the log probability for each state, i.e. has shape `(num_steps, num_samples)`. Because `jax.lax.scan` is employed, input for p(zt|ztm1) does not have the `num_steps` dimension, i.e. it is `zt: (num_samples, z_dim)` and `ztm1: (num_samples, z_dim)` and the output is the log probability for each combination of states, i.e. has shape `(num_samples, num_samples)`. The algorithm therefore scales quadratically in `num_samples`.
+The input to _p(xt|zt)_ is `xt: (num_steps, x_dim)` and `zt: (num_steps, num_samples, z_dim)` and the output is the log probability for each state, i.e. has shape `(num_steps, num_samples)`. Because `jax.lax.scan` is employed, input for _p(zt|ztm1)_ does not have the `num_steps` dimension, i.e. it is `zt: (num_samples, z_dim)` and `ztm1: (num_samples, z_dim)` and the output is the log probability for each combination of states, i.e. has shape `(num_samples, num_samples)`. The algorithm therefore scales quadratically in `num_samples`.
 
 Once these two potentially parameterized functions are defined, the model can be fit and inference can be performed by:
 
@@ -23,7 +23,7 @@ See `nilm_example.ipynb` for an example of how to use the algorithm in the conte
 
 ## Frequently Asked Questions
 * Why does the time required per epoch vary over time?
-  * Most of the time is spent sampling _without replacement_ from the auxiliary distribution $Q$. Sampling without replacement according to pre-defined inclusion probabilities is difficult and in some cases even impossible. The difficulty of sampling without replacement increases when the distribution to sample from has lower entropy. During training, the entropy of $Q$ decreases (in the beginning most states have the same probability) making the sampling step more time consuming.
+  * Most of the time is spent sampling _without replacement_ from the auxiliary distribution _Q_. Sampling without replacement according to pre-defined inclusion probabilities is difficult and in some cases even impossible. The difficulty of sampling without replacement increases when the distribution to sample from has lower entropy. During training, the entropy of _Q_ decreases (in the beginning most states have the same probability) making the sampling step more time consuming.
 * Is the model that is being performed learning and inference on a Factorial Hidden Markov Model (FMM)?
   * __No!__ FMMs make the assumption that the individual latent chains are marginally indepedent. NVIF does not require this assumption making the class of models that NVIF can perform inference and learning on a lot richer. Speficially for NILM, the 'independence between chains'-assumption is oftentimes not great because, from experience, you want to constrain the number of latent states that switch states.
 * What are potential avenues for future work?
