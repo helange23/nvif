@@ -3,23 +3,23 @@ This repository contains an efficient approximate algorithm for inference and le
 This code is accompanied by the following [paper](https://ieeexplore.ieee.org/abstract/document/8683552). A video explaining the algorithm and code will follow soon.
 
 # Usage
-In order to use the algorithm, probability densities for p(z_t | z_{t-1}) and p(x_t | z_t) need to be defined. The algorithm has two control knobs that can trade off computational burden and accurary. The first control know is the number of samples used to approximate the data likelihood (num_samples) whereas the second control knob controls the accuracy of the underlying sampler (EPS).
+In order to use the algorithm, probability densities for p(zt|ztm1) and p(xt|zt) need to be defined. The algorithm has two control knobs that can trade off computational burden and accurary. The first control know is the number of samples used to approximate the data likelihood (num_samples) whereas the second control knob controls the accuracy of the underlying sampler (EPS).
 
-The input to p(x_t | z_t) is `x_t: (num_steps, x_dim)` and `z_t: (num_steps, num_samples, z_dim)` and the output is the log probability for each state `(num_steps, num_samples)`. Because `jax.lax.scan` is employed, input for p(z_t | z_{t-1}) does not have the num_steps dimension, i.e. it is `z_t: (num_samples, z_dim)` and `z_{t-1}: (num_samples, z_dim)` and the output is again the log probability for each combination of states, i.e. `(num_samples, num_samples)`. The algorithm therefore scales quadratically in num_samples.
+The input to p(xt|zt) is `x_t: (num_steps, x_dim)` and `z_t: (num_steps, num_samples, z_dim)` and the output is the log probability for each state, i.e. has shape `(num_steps, num_samples)`. Because `jax.lax.scan` is employed, input for p(zt|ztm1) does not have the `num_steps` dimension, i.e. it is `zt: (num_samples, z_dim)` and `ztm1: (num_samples, z_dim)` and the output is the log probability for each combination of states, i.e. has shape `(num_samples, num_samples)`. The algorithm therefore scales quadratically in `num_samples`.
 
 Once these two potentially parameterized functions are defined, the model can be fit and inference can be performed by:
 
 ```python
 from nvif import NVIF
 
-N = NVIF(p_zz=p_zz_fixed, p_xz=p_xz, num_steps=128,
+N = NVIF(p_zz=p_zz, p_xz=p_xz, num_steps=128,
          num_samples=512, z_dim=15, x_dim=156)
 N.train(x[:5000], optimizer = optim.Adam(3E-3), num_epochs=20)
 
 z_hat = N.inference(x[5000:])
 ```
 
-See `nilm_example.ipynb` for an example of how to use the algorithm in the context of a synthetic problem inspired by Non-Intrusive Load Monitoring. This readme file will be expanded upon soon.
+See `nilm_example.ipynb` for an example of how to use the algorithm in the context of a synthetic problem inspired by Non-Intrusive Load Monitoring.
 
 ## Frequently Asked Questions
 * Why does the time required per epoch vary over time?
